@@ -2,198 +2,219 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Fast Hub</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Menu Loader</title>
 
 <style>
-:root { --accent:#3b82f6; --bg:#000; --bar:#111; --item:#222; }
-* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+@import url(https://fonts.googleapis.com/css?family=Poppins:400,500,600);
+:root{ --clr:#000000; }
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Poppins",sans-serif;
+}
 
-body {
-  background:var(--bg);
-  color:#fff;
-  font-family:-apple-system,system-ui,sans-serif;
+
+
+body{
+  height:0vh;
+  overflow:hidden;
+}
+
+/* CONTENT */
+iframe{
+  width:100%;
   height:100vh;
+  border:none;
+  background:#fff;
+}
+
+/* NAVIGATION */
+.navigation{
+  position:fixed;
+  bottom:12px;
+  left:50%;
+  transform:translateX(-50%);
+  width:95%;
+  max-width:400px;
+  height:59px;
+  background:#ffffff;
+  border:2.2px solid var(--clr);
+  border-radius:16px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  box-shadow:0 8px 25px rgba(0,0,0,0.25);
+}
+
+.navigation ul{
+  display:flex;
+  width:350px;
+  position:relative;
+}
+
+.navigation ul li{
+  list-style:none;
+  width:70px;
+  height:70px;
+  z-index:1;
+}
+
+.navigation ul li a{
+  width:100%;
+  height:100%;
   display:flex;
   flex-direction:column;
-  overflow:hidden;
-}
-
-#frame {
-  flex:1;
-  width:100%;
-  border:none;
-  background:#000;
-  display:none;
-}
-
-.bottom-bar {
-  background:var(--bar);
-  padding:6px 8px;
-  display:flex;
   align-items:center;
-  gap:5px;
-  border-top:1px solid #333;
+  justify-content:center;
+  text-decoration:none;
 }
 
-.picker {
-  width:80px;
-  background:var(--item);
-  border:1px solid #333;
-  border-radius:6px;
-  padding:10px 2px;
-  font-size:10px;
-  font-weight:800;
-  text-align:center;
-  color:var(--accent);
-  white-space:nowrap;
-  overflow:hidden;
+/* ICON FIX */
+.icon{
+  font-size:22px;
+  color:#E41B17;
+  line-height:1;
+  transition:0.4s;
 }
 
-input {
-  flex:1;
-  min-width:0;
-  background:var(--item);
-  border:1px solid #333;
-  color:#fff;
-  padding:10px;
-  border-radius:6px;
-  font-size:16px;
-  outline:none;
+/* TEXT FIX */
+.text{
+  font-size:12px;
+  font-weight:600;
+  color:#E41B17;
+  margin-top:2px;
+  opacity:0;
+  transition:0.4s;
 }
 
-.go {
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  width:42px;
-  height:38px;
-  border-radius:6px;
-  font-size:18px;
-  font-weight:bold;
+li.active .icon{
+  transform:translateY(-22px);
 }
 
-.overlay {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.8);
-  display:none;
-  z-index:100;
+li.active .text{
+  opacity:1;
+  transform:translateY(-2px);
 }
 
-.menu {
-  position:fixed;
-  bottom:0; left:0; right:0;
-  background:#18181b;
-  border-radius:15px 15px 0 0;
-  padding:15px;
-  max-height:80vh;
-  overflow-y:auto;
-  z-index:101;
-  transform:translate3d(0,100%,0);
-  transition:transform .2s cubic-bezier(.4,0,.2,1);
+/* INDICATOR */
+.indicator{
+  position:absolute;
+  top:-45%;
+  width:64px;
+  height:63px;
+  background:#29fd53;
+  border-radius:50%;
+  border:3px solid var(--clr);
+  transition:0.4s;
 }
-.menu.active { transform:translate3d(0,0,0); }
 
-.group { margin-bottom:15px; }
-.label {
-  font-size:10px;
-  color:#666;
-  text-transform:uppercase;
-  margin:0 0 8px 4px;
-  font-weight:900;
-}
-.grid {
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:5px;
-}
-.opt {
-  background:#27272a;
-  padding:12px 2px;
-  border-radius:6px;
-  font-size:11px;
-  text-align:center;
-}
-.opt:active { background:var(--accent); }
+li:nth-child(1).active~.indicator{ transform:translateX(0); }
+li:nth-child(2).active~.indicator{ transform:translateX(70px); }
+li:nth-child(3).active~.indicator{ transform:translateX(140px); }
+li:nth-child(4).active~.indicator{ transform:translateX(210px); }
+li:nth-child(5).active~.indicator{ transform:translateX(280px); }
 </style>
 </head>
 
 <body>
 
-<iframe id="frame"></iframe>
+<iframe id="content" src="home.html"></iframe>
 
-<div class="bottom-bar">
-  <div class="picker" id="cur-n" onclick="toggleMenu()">Google</div>
-  <input id="q" placeholder="50+ Engines..." onkeydown="if(event.key==='Enter') go()">
-  <button class="go" onclick="go()">➔</button>
-</div>
-
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-
-<div class="menu" id="menu">
-  <div class="group">
-    <div class="label">No-Signup AI</div>
-    <div class="grid" id="ai-grid"></div>
-  </div>
-  <div class="group">
-    <div class="label">Search Engines</div>
-    <div class="grid" id="search-grid"></div>
-  </div>
-  <div class="group">
-    <div class="label">Trading & Candles</div>
-    <div class="grid" id="trade-grid"></div>
-  </div>
+<div class="navigation">
+  <ul>
+    <li class="list active" data-page="home.html">
+      <a>
+        <img src="home.png" alt="Home" class="icon" style="width:30px; height:30px;">
+        <span class="text">Home</span>
+      </a>
+    </li>
+    <li class="list" data-page="paper trading.html">
+      <a>
+        <img src="trade.png" alt="Trade" class="icon" style="width:30px; height:30px;">
+        <span class="text">Trade</span>
+      </a>
+    </li>
+    <li class="list" data-page="libary.html">
+      <a>
+        <img src="libary.png" alt="Library" class="icon" style="width:30px; height:30px;">
+        <span class="text">Patterns</span>
+      </a>
+    </li>
+    <li class="list" data-page="lab.html">
+      <a>
+        <img src="lab.png" alt="Lab" class="icon" style="width:30px; height:30px;">
+        <span class="text">Lab</span>
+      </a>
+    </li>
+    <li class="list" data-page="ai.html">
+      <a>
+        <img src="ai.png" alt="AI" class="icon" style="width:30px; height:30px;">
+        <span class="text">AI</span>
+      </a>
+    </li>
+    <div class="indicator"></div>
+  </ul>
 </div>
 
 <script>
-const engines = {
-  google:['Google','https://www.google.com/search?q='],
-  wiki:['Wiki','https://en.m.wikipedia.org/wiki/Special:Search?search='],
-  bing:['Bing','https://www.bing.com/search?q='],
-  brave:['Brave','https://search.brave.com/search?q='],
-  duck:['DuckGo','https://duckduckgo.com/?q=']
-};
+const list = document.querySelectorAll('.list');
+const frame = document.getElementById('content');
+const nav = document.querySelector('.navigation');
 
-let curId = 'google';
+// Define exactly which pages should show the navigation bar
+const mainPages = [
+    "home.html", 
+    "paper trading.html", 
+    "libary.html", 
+    "lab.html", 
+    "ai.html"
+];
 
-window.buildMenu = function () {
-  const grids = { ai:'ai-grid', search:'search-grid', trade:'trade-grid' };
-  let i = 0;
-  for (let id in engines) {
-    const type = i < 2 ? 'ai' : 'search';
-    const el = document.createElement('div');
-    el.className = 'opt';
-    el.innerText = engines[id][0];
-    el.onclick = () => select(id);
-    document.getElementById(grids[type]).appendChild(el);
-    i++;
-  }
-};
+function updateNavVisibility() {
+    try {
+        // Get current filename from iframe and handle URL spaces
+        const path = frame.contentWindow.location.pathname;
+        const currentPage = decodeURIComponent(path.split("/").pop());
 
-window.toggleMenu = function () {
-  const m = document.getElementById('menu');
-  const o = document.getElementById('overlay');
-  const a = m.classList.toggle('active');
-  o.style.display = a ? 'block' : 'none';
-};
+        // Only show nav if the page is one of the 5 main menu items
+        if (mainPages.includes(currentPage)) {
+            nav.style.display = "flex";
+            
+            // Auto-update the active bubble if you navigate via script
+            list.forEach(item => {
+                if(item.dataset.page === currentPage) {
+                    list.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                }
+            });
+        } else {
+            // Hide navigation if you go to any other "new" HTML page
+            nav.style.display = "none";
+        }
+    } catch(e) {
+        // Fallback for security errors
+        nav.style.display = "none";
+    }
+}
 
-window.select = function (id) {
-  curId = id;
-  document.getElementById('cur-n').innerText = engines[id][0];
-  toggleMenu();
-};
+// Menu Clicks
+list.forEach(item => {
+    item.addEventListener('click', function() {
+        list.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        frame.src = this.dataset.page;
+    });
+});
 
-window.go = function () {
-  const q = document.getElementById('q').value.trim();
-  if (!q) return;
-  const url = engines[curId][1] + encodeURIComponent(q);
-  frame.style.display = 'block';
-  frame.src = url;
-};
+// Watch the iframe for any page changes
+frame.addEventListener('load', updateNavVisibility);
 
-buildMenu();
+// Initial check on startup
+updateNavVisibility();
 </script>
 
 </body>
 </html>
+
