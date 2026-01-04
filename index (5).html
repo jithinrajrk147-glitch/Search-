@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fast Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="dns-prefetch" href="//www.google.com">
+<link rel="dns-prefetch" href="//www.tradingview.com">
+<link rel="dns-prefetch" href="//www.perplexity.ai">
+
+<style>
+    :root { --accent: #3b82f6; --bg: #000; --bar: #111; --item: #222; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    
+    body { background: var(--bg); color: #fff; font-family: -apple-system, system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    #frame { flex: 1; width: 100%; border: none; background: #000; }
+
+    /* Ultra-Fast Bottom Bar */
+    .bottom-bar { 
+        background: var(--bar); 
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); 
+        display: flex; 
+        align-items: center; 
+        gap: 5px; 
+        border-top: 1px solid #333;
+        z-index: 10;
+    }
+    
+    .picker { 
+        width: 80px; background: var(--item); border: 1px solid #333; border-radius: 6px; 
+        padding: 10px 2px; font-size: 10px; font-weight: 800; text-align: center; 
+        color: var(--accent); white-space: nowrap; overflow: hidden;
+    }
+
+    input { 
+        flex: 1; min-width: 0; background: var(--item); border: 1px solid #333; 
+        color: #fff; padding: 10px; border-radius: 6px; font-size: 16px; outline: none; 
+    }
+
+    .go { 
+        background: var(--accent); color: #fff; border: none; width: 42px; height: 38px; 
+        border-radius: 6px; font-size: 18px; font-weight: bold;
+    }
+
+    /* GPU Accelerated Menu */
+    .overlay { 
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+        background: rgba(0,0,0,0.8); display: none; z-index: 100; 
+    }
+    .menu { 
+        position: fixed; bottom: 0; left: 0; right: 0; background: #18181b; 
+        border-radius: 15px 15px 0 0; padding: 15px; max-height: 80vh; 
+        overflow-y: auto; z-index: 101; 
+        transform: translate3d(0, 100%, 0); /* GPU Accelerated */
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .menu.active { transform: translate3d(0, 0, 0); }
+    
+    .group { margin-bottom: 15px; }
+    .label { font-size: 10px; color: #666; text-transform: uppercase; margin: 0 0 8px 4px; font-weight: 900; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .opt { background: #27272a; padding: 12px 2px; border-radius: 6px; font-size: 11px; text-align: center; border: 1px solid transparent; }
+    .opt:active { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<iframe id="frame" src="about:blank"></iframe>
+
+<div class="bottom-bar">
+    <div class="picker" onclick="toggleMenu()" id="cur-n">Google</div>
+    <input id="q" type="text" placeholder="50+ Engines..." onkeydown="if(event.key==='Enter') go()">
+    <button class="go" onclick="go()">➔</button>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="menu" id="menu">
+    <div class="group">
+        <div class="label">No-Signup AI</div>
+        <div class="grid" id="ai-grid"></div>
+    </div>
+    <div class="group">
+        <div class="label">Search Engines</div>
+        <div class="grid" id="search-grid"></div>
+    </div>
+    <div class="group">
+        <div class="label">Trading & Candles</div>
+        <div class="grid" id="trade-grid"></div>
+    </div>
+</div>
+
+<script>
+const engines = {
+    // AI
+    perplexity: ['Perplex', 'https://www.perplexity.ai/search?q='],
+    duckai: ['DuckAI', 'https://duckduckgo.com/?ia=chat&q='],
+    phind: ['Phind', 'https://www.phind.com/search?q='],
+    iask: ['iAsk', 'https://iask.ai/?q='],
+    andi: ['Andi', 'https://andisearch.com/?q='],
+    deepseek: ['DeepSeek', 'https://www.deepseek.com/'],
+    chatgpt: ['ChatGPT', 'https://chatgpt.com/'],
+    claude: ['Claude', 'https://claude.ai/'],
+    grok: ['Grok', 'https://x.com/i/grok'],
+    felo: ['Felo', 'https://felo.ai/search?q='],
+    metaso: ['Metaso', 'https://metaso.cn/?q='],
+    hugging: ['Hugging', 'https://huggingface.co/chat/'],
+    
+    // SEARCH
+    google: ['Google', 'https://www.google.com/search?q='],
+    bing: ['Bing', 'https://www.bing.com/search?q='],
+    brave: ['Brave', 'https://search.brave.com/search?q='],
+    duck: ['DuckGo', 'https://duckduckgo.com/?q='],
+    startpage: ['Startpg', 'https://www.startpage.com/do/search?query='],
+    mojeek: ['Mojeek', 'https://www.mojeek.com/search?q='],
+    ecosia: ['Ecosia', 'https://www.ecosia.org/search?q='],
+    qwant: ['Qwant', 'https://www.qwant.com/?q='],
+    yandex: ['Yandex', 'https://yandex.com/search/?text='],
+    baidu: ['Baidu', 'https://www.baidu.com/s?wd='],
+    swiss: ['Swiss', 'https://swisscows.com/web?query='],
+    searx: ['SearX', 'https://searx.be/search?q='],
+    gibiru: ['Gibiru', 'https://gibiru.com/results.html?q='],
+    wiki: ['Wiki', 'https://en.m.wikipedia.org/wiki/Special:Search?search='],
+    reddit: ['Reddit', 'https://www.reddit.com/search/?q='],
+    
+    // TRADING
+    tradingview: ['TradingV', 'https://www.tradingview.com/chart/?symbol='],
+    finviz: ['Finviz', 'https://finviz.com/quote.ashx?t='],
+    dex: ['DEXScr', 'https://dexscreener.com/search?q='],
+    cmc: ['CMC', 'https://coinmarketcap.com/currencies/'],
+    investing: ['Invest', 'https://www.investing.com/search/?q=']
+};
+
+let curId = 'google';
+
+function buildMenu() {
+    const grids = { ai: 'ai-grid', search: 'search-grid', trade: 'trade-grid' };
+    let i = 0;
+    for (let id in engines) {
+        const type = i < 12 ? 'ai' : i < 27 ? 'search' : 'trade';
+        const el = document.createElement('div');
+        el.className = 'opt';
+        el.innerText = engines[id][0];
+        el.onclick = () => select(id);
+        document.getElementById(grids[type]).appendChild(el);
+        i++;
+    }
+}
+
+function toggleMenu() {
+    const m = document.getElementById('menu');
+    const o = document.getElementById('overlay');
+    const active = m.classList.toggle('active');
+    o.style.display = active ? 'block' : 'none';
+}
+
+function select(id) {
+    curId = id;
+    document.getElementById('cur-n').innerText = engines[id][0];
+    toggleMenu();
+}
+
+function go() {
+    const q = document.getElementById("q").value.trim();
+    if(!q && !['chatgpt', 'deepseek', 'claude'].includes(curId)) return;
+    
+    const url = engines[curId][1] + encodeURIComponent(q);
+    const useIframe = ['wiki', 'finviz', 'mojeek'].includes(curId);
+    
+    if(useIframe && q) document.getElementById("frame").src = url;
+    else window.location.href = url;
+}
+
+buildMenu();
+</script>
+</body>
+</html>
